@@ -1,1 +1,1 @@
-get https://stafford-phonebook.herokuapp.com/api/persons/
+get http://localhost:3001/api/persons

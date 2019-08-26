@@ -1,8 +1,10 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
 const bodyParser = require('body-parser')
 const morgan = require('morgan')
 const cors = require('cors')
+const Person = require('./models/persons')
 
 app.use(bodyParser.json())
 app.use(morgan('tiny'))
@@ -41,7 +43,9 @@ let persons = [
 ]
 
 app.get('/api/persons', (req, res) => {
-  res.json(persons)
+  Person.find({}).then(persons => {
+    res.json(persons.map(person => person.toJSON()))
+  })
 })
 
 app.get('/info', (req, res) => {
@@ -51,12 +55,20 @@ app.get('/info', (req, res) => {
   res.send(info)
 })
 
-app.get('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id)
-  const person = persons.find(person => person.id === id)
-  if (person) return res.send(person)
-  res.status(204).send('error')
+app.get('/api/persons/:id', (res, response) => {
+  Person.findById(request.params.id)
+    .then(person => {
+      response.json(person.toJSON())
+    })
+    .catch(error => response.status(400).send('error'))
 })
+
+// app.get('/api/persons/:id', (req, res) => {
+//   const id = Number(req.params.id)
+//   const person = persons.find(person => person.id === id)
+//   if (person) return res.send(person)
+//   res.status(204).send('error')
+// })
 
 app.delete('/api/persons/:id', (req, res) => {
   const id = Number(req.params.id)
@@ -66,15 +78,18 @@ app.delete('/api/persons/:id', (req, res) => {
   res.status(204).end()
 })
 
-const getID = (min, max) => {
-  min = Math.ceil(min)
-  max = Math.floor(max)
-  return Math.floor(Math.random() * (max - min)) + min
-}
+// const getID = (min, max) => {
+//   min = Math.ceil(min)
+//   max = Math.floor(max)
+//   return Math.floor(Math.random() * (max - min)) + min
+// }
 
-app.post('/api/persons', (req, res) => {
-  console.log('post starting')
-  const body = req.body
+app.post('/api/persons', (request, response) => {
+  const body = request.body
+
+  if (body.number === undefined || body.name === undefined) {
+    return response.status(400).json({ error: 'required filed missing' })
+  }
 
   if (!body.name || !body.number) {
     return res.status(400).json({ error: 'name or number missing' })
@@ -84,16 +99,39 @@ app.post('/api/persons', (req, res) => {
       .status(400)
       .json({ error: 'name already exsists in the phonebook' })
   }
-  const person = {
+
+  const person = new Person({
     name: body.name,
-    number: body.number,
-    id: getID(0, 99999)
-  }
-  persons = persons.concat(person)
-  res.json(person)
+    number: body.number
+  })
+
+  person.save().then(savedPerson => {
+    response.json(savedPerson.toJSON())
+  })
 })
 
-const PORT = process.env.PORT || 3001
+// app.post('/api/persons', (req, res) => {
+//   console.log('post starting')
+//   const body = req.body
+
+//   if (!body.name || !body.number) {
+//     return res.status(400).json({ error: 'name or number missing' })
+//   }
+//   if (persons.find(person => person.name === body.name)) {
+//     return res
+//       .status(400)
+//       .json({ error: 'name already exsists in the phonebook' })
+//   }
+//   const person = {
+//     name: body.name,
+//     number: body.number,
+//     id: getID(0, 99999)
+//   }
+//   persons = persons.concat(person)
+//   res.json(person)
+// })
+
+const PORT = process.env.PORT
 app.listen(PORT, () => {
-  console.log(`ap is listening on port ${PORT}`)
+  console.log(`app is listening on port ${PORT}`)
 })
