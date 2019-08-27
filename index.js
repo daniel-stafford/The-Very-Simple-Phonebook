@@ -43,6 +43,10 @@ let persons = [
   }
 ]
 
+app.get('/', (req, res) => {
+  res.send('Hello World')
+})
+
 app.use(express.static('build'))
 
 app.get('/api/persons', (req, res) => {
